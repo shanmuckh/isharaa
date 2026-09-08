@@ -23,8 +23,12 @@ More of a deep dive into training a DETR model from scratch and all the nuaces w
 2. Run the training pipeline `uv run src/train.py`
 
 # Running  🚀 
-1. To test on your test set, update the checkpoint parameter in `test.py` then run `uv run src/test.py`
-2. To run in real time, update the checkpoint parameter in `realtime.py` then run `uv run src/realtime.py`</br> 
+1. **Interactive Web App (Sign to Text & Text to Sign)**:
+   Run `uv run python app.py` to start the server and open `http://localhost:8000`.
+   - **Sign to Text**: Launch and monitor real-time detection with 1 click.
+   - **Text to Sign**: Embedded Isharaa Translate iframe for real-time sign language synthesis.
+2. To test on your test set, update the checkpoint parameter in `test.py` then run `uv run src/test.py`
+3. To run in real time via CLI, update the checkpoint parameter in `realtime.py` then run `uv run src/realtime.py`</br> 
 <strong>N.B.</strong> you might need need to update your camera parameter in cv2.VideoCapture() to get the right webcam for your machine. 
 
 # Great resources: 

@@ -9,6 +9,7 @@ from utils.rich_handlers import TrainingHandler, rich_training_context
 import sys 
 import torch
 from utils.boxes import stacker
+from utils.setup import get_classes
 
 if __name__ == '__main__': 
     # Initialize logger and handlers
@@ -21,7 +22,8 @@ if __name__ == '__main__':
     test_dataset = DETRData('data/test', train=False) 
     test_dataloader = DataLoader(test_dataset, batch_size=4, collate_fn=stacker, drop_last=True) 
 
-    num_classes = 3 
+    classes = get_classes()
+    num_classes = len(classes) 
     model = DETR(num_classes=num_classes)
     model.load_pretrained('pretrained/4426_model.pt')
     model.log_model_info()

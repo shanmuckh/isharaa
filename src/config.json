@@ -2,7 +2,9 @@
   "classes": [
     "hello",
     "iloveyou",
-    "thankyou"
+    "thankyou",
+    "zero",
+    "one"
   ],
   "colors": [
     [
@@ -19,6 +21,16 @@
       131,
       193,
       103
+    ],
+    [
+      235,
+      87,
+      87
+    ],
+    [
+      155,
+      89,
+      182
     ]
   ]
 }

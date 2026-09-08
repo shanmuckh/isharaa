@@ -127,9 +127,33 @@ class DETR(nn.Module):
         self.model_handler.log_parameters_count(total_params, trainable_params)
         
     def load_pretrained(self, checkpoint_path: str):
-        """Load pretrained weights with logging."""
+        """Load pretrained weights with logging and classifier head adaptation."""
         try:
-            self.load_state_dict(torch.load(checkpoint_path))
+            state_dict = torch.load(checkpoint_path, map_location='cpu')
+            if 'linear_class.weight' in state_dict:
+                ckpt_classes = state_dict['linear_class.weight'].shape[0]
+                model_classes = self.linear_class.weight.shape[0]
+                if ckpt_classes != model_classes:
+                    self.logger.warning(
+                        f"Adapting classification head: checkpoint has {ckpt_classes - 1} classes (+1 background), "
+                        f"model expects {model_classes - 1} classes (+1 background)."
+                    )
+                    min_cls = min(ckpt_classes - 1, model_classes - 1)
+                    new_weight = self.linear_class.weight.data.clone()
+                    new_bias = self.linear_class.bias.data.clone()
+
+                    # Copy overlapping class weights & biases
+                    new_weight[:min_cls] = state_dict['linear_class.weight'][:min_cls]
+                    new_bias[:min_cls] = state_dict['linear_class.bias'][:min_cls]
+
+                    # Copy background class (always the last index in DETR)
+                    new_weight[-1] = state_dict['linear_class.weight'][-1]
+                    new_bias[-1] = state_dict['linear_class.bias'][-1]
+
+                    state_dict['linear_class.weight'] = new_weight
+                    state_dict['linear_class.bias'] = new_bias
+
+            self.load_state_dict(state_dict)
             self.model_handler.log_model_loading(checkpoint_path, success=True)
         except Exception as e:
             self.logger.error(f"Failed to load checkpoint: {str(e)}")
@@ -137,5 +161,7 @@ class DETR(nn.Module):
 
 
 if __name__ == '__main__': 
-    model = DETR(num_classes=3)
+    from utils.setup import get_classes
+    classes = get_classes()
+    model = DETR(num_classes=len(classes))
     summary(model, (5,3,224,224))

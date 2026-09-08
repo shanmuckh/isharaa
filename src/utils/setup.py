@@ -1,27 +1,47 @@
 import json
 import os
 
+def _get_config_path():
+    # Try local src/config.json, then sibling config.json in src dir
+    if os.path.exists('src/config.json'):
+        return 'src/config.json'
+    dir_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    candidate = os.path.join(dir_path, 'config.json')
+    if os.path.exists(candidate):
+        return candidate
+    return 'src/config.json'
+
 def get_classes(): 
+    default_classes = ["hello", "iloveyou", "thankyou", "zero", "one"]
     try: 
-        with open('src/config.json') as f: 
+        cfg_path = _get_config_path()
+        with open(cfg_path) as f: 
             config = json.load(f) 
-        classes = config['classes']
-        assert len(classes) > 0, 'You need to specify classes inside of config.json e.g. {"classes":["hello", "iloveyou", "hola"]}'
+        classes = config.get('classes', default_classes)
+        assert len(classes) > 0
         return classes         
-    except Exception as e: 
-        return f'Something went wrong loading your config file: {e}'
+    except Exception: 
+        return default_classes
 
 def get_colors(): 
+    default_colors = [
+        [41, 171, 202], 
+        [240, 172, 95], 
+        [131, 193, 103], 
+        [235, 87, 87], 
+        [155, 89, 182]
+    ]
     try: 
-        with open('src/config.json') as f: 
+        cfg_path = _get_config_path()
+        with open(cfg_path) as f: 
             config = json.load(f) 
-        classes = config['classes'] 
-        colors = config['colors']
-        assert len(colors) > 0, 'You need to specify colors in RGB inside of config.json e.g. {"colors":[[131, 193, 103], [240, 172, 95]]}'
-        assert len(classes) == len(colors), f'Please specify one color per class. You have {len(colors)} colours and {len(classes)} classes'
-        return colors
-    except Exception as e: 
-        return f'Something went wrong loading your config file: {e}'
+        classes = config.get('classes', [])
+        colors = config.get('colors', default_colors)
+        if len(classes) == len(colors) and len(colors) > 0:
+            return colors
+        return default_colors
+    except Exception: 
+        return default_colors
     
     
 if __name__ == '__main__': 

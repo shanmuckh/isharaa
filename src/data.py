@@ -117,7 +117,7 @@ if __name__ == '__main__':
         box_classes = annotations['labels'] 
         boxes = rescale_bboxes(annotations['boxes'], (224,224))
         for box_class, bbox in zip(box_classes, boxes): 
-            if box_class != 3: 
+            if box_class < len(CLASSES): 
                 xmin, ymin, xmax, ymax = bbox.detach().numpy()
                 print(xmin, ymin, xmax, ymax) 
                 ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, fill=False, color=(0.000, 0.447, 0.741), linewidth=3))
