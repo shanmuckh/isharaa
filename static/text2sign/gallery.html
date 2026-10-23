@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Isharaa Handshape Inventory</title>
+<style>
+  body { margin: 0; background: #050505; color: #ddd; font: 13px "Space Mono", ui-monospace, monospace; padding: 16px; }
+  h1 { font-size: 16px; letter-spacing: 2px; margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  figure { margin: 0; border: 1px solid #333; background: #0d0d0d; padding: 6px; text-align: center; }
+  figure img { width: 100%; display: block; }
+  figcaption b { display: block; color: #fff; font-size: 14px; }
+  figcaption span { color: #888; font-size: 10px; }
+  .bar { margin-bottom: 12px; display: flex; gap: 8px; }
+  .bar a { color: #ccc; border: 1px solid #444; padding: 4px 8px; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>ISHARAA // ASL HANDSHAPE INVENTORY (RIGHT HAND)</h1>
+<div class="bar"><a href="?view=palm">palm view</a><a href="?view=side">side view</a><a href="?view=three">3/4 view</a></div>
+<div class="grid" id="grid"></div>
+<script type="module">
+import * as THREE from '../vendor/three.module.min.js';
+import { Hand, HandshapeLibrary, handQuat } from './avatar.js';
+
+const params = new URLSearchParams(location.search);
+const view = params.get('view') || 'palm';
+const only = params.get('only');
+const json = await (await fetch('/api/sign-data')).json();
+const lib = new HandshapeLibrary(json.handshapes);
+
+const canvas = document.createElement('canvas');
+canvas.width = 300; canvas.height = 340;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.setClearColor(0x0d0d0d);
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xffffff, 0x333333, 1.2));
+const key = new THREE.DirectionalLight(0xffffff, 2.2);
+key.position.set(-0.6, 1.0, 1.5);
+scene.add(key);
+const camera = new THREE.PerspectiveCamera(30, 300 / 340, 0.01, 5);
+const cams = { palm: [0, 0.075, 0.42], side: [0.40, 0.075, 0.12], three: [0.26, 0.12, 0.33] };
+camera.position.set(...cams[view]);
+camera.lookAt(0, 0.075, 0);
+const hand = new Hand(1, new THREE.MeshStandardMaterial({ color: 0xe6e3de, roughness: 0.55 }));
+hand.root.quaternion.copy(handQuat('out', 'up'));
+scene.add(hand.root);
+
+const grid = document.getElementById('grid');
+for (const name of lib.names()) {
+  if (only && !only.split(',').includes(name)) continue;
+  hand.setShape(lib.get(name));
+  renderer.render(scene, camera);
+  const fig = document.createElement('figure');
+  fig.innerHTML = `<img src="${canvas.toDataURL()}"><figcaption><b>${name}</b><span>${json.handshapes.shapes[name].desc}</span></figcaption>`;
+  grid.appendChild(fig);
+}
+document.body.dataset.ready = '1';
+</script>
+</body>
+</html>
