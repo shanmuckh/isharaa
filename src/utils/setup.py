@@ -12,7 +12,7 @@ def _get_config_path():
     return 'src/config.json'
 
 def get_classes(): 
-    default_classes = ["hello", "iloveyou", "thankyou", "zero", "one"]
+    default_classes = ["hello", "iloveyou", "one", "thankyou", "zero"]  # Label Studio id order
     try: 
         cfg_path = _get_config_path()
         with open(cfg_path) as f: 
