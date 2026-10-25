@@ -40,30 +40,58 @@ transforms = A.Compose(
     )
 
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-model_path = os.path.join(base_dir, 'pretrained', '4426_model.pt')
-if not os.path.exists(model_path):
-    model_path = 'pretrained/4426_model.pt'
+# Fine-tuned 5-class detector produced by src/train.py; fall back to the
+# pretrained weights only if the fine-tuned checkpoint is missing.
+candidates = [os.path.join(base_dir, 'pretrained', 'ishaara_5class.pt'),
+              os.path.join(base_dir, 'checkpoints', '99_model.pt'),
+              os.path.join(base_dir, 'pretrained', '4426_model.pt')]
+model_path = next(p for p in candidates if os.path.exists(p) or p == candidates[-1])
 
 CLASSES = get_classes() 
 COLORS = get_colors() 
 
+device = torch.device('mps' if torch.backends.mps.is_available() else 'cuda' if torch.cuda.is_available() else 'cpu')
 model = DETR(num_classes=len(CLASSES))
 model.eval()
-model.load_pretrained(model_path) 
+model.load_pretrained(model_path)
+model.to(device)
 
 logger.realtime("Starting camera capture...")
 sys.stdout.flush()
 
-# Attempt camera open (try index 0, then index 1)
-cap = cv2.VideoCapture(0)
-if not cap.isOpened():
-    logger.warning("Camera index 0 unavailable, attempting index 1...")
-    sys.stdout.flush()
-    cap = cv2.VideoCapture(1)
+def open_camera(indices=(0, 1), wait_seconds=20):
+    """Open the first working camera.
 
-if not cap.isOpened():
-    logger.error("Failed to open camera device (tested index 0 and 1).")
-    logger.error("Permission tip: On macOS, verify Camera access is granted in System Settings -> Privacy & Security -> Camera.")
+    On macOS the first VideoCapture call only *requests* camera permission and
+    fails straight away while the system prompt is still on screen, so keep
+    retrying for a while instead of giving up on the first attempt.
+    """
+    backend = cv2.CAP_AVFOUNDATION if sys.platform == "darwin" else cv2.CAP_ANY
+    deadline = time.time() + wait_seconds
+    announced = False
+    while running:
+        for index in indices:
+            cap = cv2.VideoCapture(index, backend)
+            if cap.isOpened() and cap.read()[0]:
+                logger.realtime(f"Camera {index} opened.")
+                sys.stdout.flush()
+                return cap
+            cap.release()
+        if time.time() > deadline:
+            return None
+        if not announced:
+            logger.warning("Waiting for camera access. If macOS asks, click Allow.")
+            sys.stdout.flush()
+            announced = True
+        time.sleep(1.0)
+    return None
+
+
+cap = open_camera()
+if cap is None:
+    logger.error("CAMERA_PERMISSION: could not open a camera (tried index 0 and 1).")
+    logger.error("On macOS, allow camera access for the app that started the server "
+                 "(e.g. Terminal) in System Settings -> Privacy & Security -> Camera, then try again.")
     sys.stdout.flush()
     sys.exit(1)
 
@@ -83,8 +111,11 @@ try:
         
         # Time the inference
         inference_start = time.time()
-        transformed = transforms(image=frame)
-        result = model(torch.unsqueeze(transformed['image'], dim=0))
+        # OpenCV frames are BGR; the model was trained on RGB images
+        transformed = transforms(image=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        with torch.inference_mode():
+            result = model(torch.unsqueeze(transformed['image'], dim=0).to(device))
+        result = {k: v.cpu() for k, v in result.items()}
         inference_time = (time.time() - inference_start) * 1000  # Convert to ms
 
         probabilities = result['pred_logits'].softmax(-1)[:,:,:-1] 
