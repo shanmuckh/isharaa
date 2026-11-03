@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ishaara word-model video evaluation</title>
+<style>
+  body { font: 13px ui-monospace, Menlo, monospace; margin: 16px; background: #fff; color: #111; }
+  #log { white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Word model: evaluation on video clips</h1>
+<p>Runs the live pipeline (MediaPipe in this page -> POST /api/sign) on every clip of
+<code>?list=</code> (a JSON list of {file, word}). Use <code>&amp;from=</code> / <code>&amp;to=</code> for a slice.</p>
+<div id="log"></div>
+<script type="module">
+import { loadTrackers, track } from '../words.js';
+
+const q = new URLSearchParams(location.search);
+const base = q.get('base') || '/data/wlasl_eval/';
+const list = await (await fetch(q.get('list') || base + 'pick.json')).json();
+const items = list.slice(+(q.get('from') || 0), +(q.get('to') || list.length));
+const log = (s) => { document.getElementById('log').textContent += s + '\n'; };
+const trackers = await loadTrackers();
+const results = [];
+window.evalResults = results;
+
+async function frames(src) {
+  const video = document.createElement('video');
+  video.muted = true;
+  video.src = src;
+  await new Promise((ok, bad) => { video.onloadeddata = ok; video.onerror = () => bad(new Error('cannot load ' + src)); });
+  const fps = 25, out = [];
+  let ts = performance.now();
+  for (let t = 0; t < video.duration; t += 1 / fps) {
+    video.currentTime = t;
+    await new Promise((r) => { video.onseeked = r; });
+    ts += 1000 / fps;
+    out.push(Array.from(track(trackers, video, ts).raw, (v) => Math.round(v * 1e4) / 1e4));
+  }
+  return out;
+}
+
+for (const [i, item] of items.entries()) {
+  try {
+    const clip = await frames(base + item.file);
+    const r = await fetch('/api/sign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ frames: clip }) });
+    const res = await r.json();
+    if (!r.ok) throw new Error(res.error);
+    const words = res.candidates.map((c) => c.word.toLowerCase());
+    const hands = clip.filter((f) => f.slice(99).some((v) => v !== 0)).length;
+    results.push({ file: item.file, word: item.word, top: words, top1: words[0] === item.word, top5: words.includes(item.word), frames: clip.length, handFrames: hands });
+    log(`${i + 1}/${items.length} ${item.word.padEnd(14)} -> ${words.slice(0, 3).join(', ')}${words[0] === item.word ? '  ✓' : ''}`);
+  } catch (e) {
+    results.push({ file: item.file, word: item.word, error: String(e.message || e) });
+    log(`${i + 1}/${items.length} ${item.word} ERROR ${e.message}`);
+  }
+}
+const ok = results.filter((r) => !r.error);
+const pct = (k) => (100 * ok.filter((r) => r[k]).length / ok.length).toFixed(1);
+log(`\nDONE n=${ok.length} (errors ${results.length - ok.length})  top-1 ${pct('top1')}%  top-5 ${pct('top5')}%`);
+window.evalDone = true;
+</script>
+</body>
+</html>
