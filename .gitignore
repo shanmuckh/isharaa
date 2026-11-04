@@ -28,3 +28,14 @@ archive
 example_loggers
 # Runtime logs
 logs/
+
+# downloaded dataset (ASL Citizen, CC BY-NC-SA 4.0) - re-fetch with src/signs/download.py
+data/asl_citizen_200
+data/wlasl_eval
+
+# personal training photos and labels (see README: "Train on your own signs")
+data/train
+data/test
+
+# local-only files
+report/
