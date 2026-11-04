@@ -3,1489 +3,640 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ISHARAA // RETRO SIGN AI</title>
-  <meta name="description" content="Isharaa: Bidirectional Sign Language Communication System. Powered by DEtection TRansformer (DETR) and Isharaa Translator. Monochromatic Retro Edition.">
-  
-  <!-- Retro Google Fonts: Silkscreen, VT323, and Space Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=VT323&display=swap" rel="stylesheet">
-
+  <meta name="color-scheme" content="light dark">
+  <title>Ishaara</title>
+  <meta name="description" content="Ishaara: sign, text and speech translation. A DETR recogniser for sign to text, on-device speech recognition, and an English-to-ASL gloss engine with a procedural 3D signing avatar.">
   <style>
+    /* ======================================================================
+       Tokens: neutral, monochrome. Light by default, dark follows the system.
+       ====================================================================== */
     :root {
-      --bg-black: #050505;
-      --bg-darker: #000000;
-      --bg-card: rgba(14, 14, 14, 0.72);
-      --bg-card-hover: rgba(22, 22, 22, 0.85);
-      --bg-glass-nav: rgba(18, 18, 18, 0.65);
-      --bg-glass-active: rgba(255, 255, 255, 0.95);
-      
-      --border-subtle: rgba(255, 255, 255, 0.12);
-      --border-medium: rgba(255, 255, 255, 0.24);
-      --border-bright: rgba(255, 255, 255, 0.85);
-      
-      --text-pure: #ffffff;
-      --text-silver: #d4d4d8;
-      --text-muted: #71717a;
-      --text-dark: #000000;
-
-      --font-pixel: 'Silkscreen', monospace;
-      --font-crt: 'VT323', monospace;
-      --font-mono: 'Space Mono', monospace;
-
-      --glass-blur: blur(24px) saturate(180%);
-      --shadow-glass: 0 16px 40px -10px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-      --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.35);
-      
-      --radius-sm: 4px;
-      --radius-md: 10px;
-      --radius-lg: 16px;
-      --radius-full: 9999px;
-      
-      --transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      color-scheme: light dark;
+      --bg: #f2f2f7;
+      --glass: rgba(255, 255, 255, 0.62);
+      --glass-strong: rgba(255, 255, 255, 0.82);
+      --hairline: rgba(0, 0, 0, 0.07);
+      --text: #1d1d1f;
+      --text-2: #6e6e73;
+      --text-3: #a1a1a6;
+      --fill: rgba(118, 118, 128, 0.12);
+      --fill-2: rgba(118, 118, 128, 0.2);
+      --thumb: #ffffff;
+      --primary: #1d1d1f;
+      --on-primary: #ffffff;
+      --ok: #34c759;
+      --busy: #0a84ff;
+      --warn: #ff9f0a;
+      --bad: #ff3b30;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 32px rgba(0, 0, 0, 0.06);
+      --blob-a: #d9dde6;
+      --blob-b: #e7e1da;
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+      --blur: blur(30px) saturate(180%);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --glass: rgba(30, 30, 32, 0.55);
+        --glass-strong: rgba(44, 44, 46, 0.8);
+        --hairline: rgba(255, 255, 255, 0.08);
+        --text: #f5f5f7;
+        --text-2: #a1a1a6;
+        --text-3: #6e6e73;
+        --fill: rgba(118, 118, 128, 0.24);
+        --fill-2: rgba(118, 118, 128, 0.36);
+        --thumb: #636366;
+        --primary: #f5f5f7;
+        --on-primary: #000000;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px rgba(0, 0, 0, 0.45);
+        --blob-a: #1c2230;
+        --blob-b: #2a2420;
+      }
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    html { background: var(--bg); }
     body {
-      background-color: var(--bg-black);
-      color: var(--text-pure);
-      font-family: var(--font-mono);
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-      position: relative;
-      background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-      background-size: 36px 36px;
-      background-position: center top;
-    }
-
-    /* Ambient CRT Backlight Glow (Black & White Specular) */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -150px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 800px;
-      height: 400px;
-      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.07) 0%, rgba(0, 0, 0, 0) 70%);
-      pointer-events: none;
-      z-index: -1;
-    }
-
-    /* Optional Scanline Overlay */
-    .scanlines-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 999;
-      background: linear-gradient(
-        rgba(18, 16, 16, 0) 50%, 
-        rgba(0, 0, 0, 0.28) 50%
-      );
-      background-size: 100% 4px;
-      opacity: 0.6;
-      transition: opacity 0.3s ease;
-    }
-
-    .scanlines-overlay.disabled {
-      opacity: 0;
-    }
-
-    /* Header Bar */
-    header {
-      padding: 18px 32px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(8, 8, 8, 0.7);
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      border-bottom: 1px solid var(--border-subtle);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .brand-cluster {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .logo-badge {
-      width: 44px;
-      height: 44px;
-      background: #000000;
-      border: 1px solid var(--border-medium);
-      border-radius: var(--radius-sm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.15), 0 0 15px rgba(255, 255, 255, 0.1);
-      position: relative;
-    }
-
-    .logo-badge::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      border: 1px dashed rgba(255, 255, 255, 0.3);
-      border-radius: 6px;
-      pointer-events: none;
-    }
-
-    .brand-text h1 {
-      font-family: var(--font-pixel);
-      font-size: 20px;
-      letter-spacing: 1px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand-edition-tag {
-      font-family: var(--font-crt);
-      font-size: 18px;
-      padding: 2px 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid var(--border-medium);
-      color: var(--text-pure);
-      border-radius: var(--radius-sm);
-      letter-spacing: 1.5px;
-    }
-
-    .brand-sub {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-muted);
-      letter-spacing: 0.5px;
-      margin-top: 2px;
-    }
-
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    /* CRT Toggle Button */
-    .crt-toggle-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      color: var(--text-silver);
-      font-family: var(--font-pixel);
-      font-size: 11px;
-      padding: 6px 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: var(--transition);
-    }
-
-    .crt-toggle-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      color: var(--text-pure);
-      border-color: var(--border-medium);
-    }
-
-    .crt-toggle-btn.active {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: var(--border-bright);
-      color: var(--text-pure);
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-    }
-
-    /* Telemetry Pill */
-    .telemetry-pill {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 18px;
-      background: rgba(14, 14, 14, 0.85);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-full);
-      font-family: var(--font-mono);
-      font-size: 12px;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    }
-
-    .status-beacon {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--text-muted);
-      transition: var(--transition);
-    }
-
-    .status-beacon.online {
-      background: #ffffff;
-      box-shadow: 0 0 12px #ffffff;
-    }
-
-    .status-beacon.active-run {
-      background: #ffffff;
-      box-shadow: 0 0 16px #ffffff;
-      animation: pulseBlink 0.9s infinite;
-    }
-
-    @keyframes pulseBlink {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.25; transform: scale(0.85); }
-    }
-
-    /* Main Container */
-    main {
-      flex: 1;
-      max-width: 1380px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 30px 24px 60px;
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-    }
-
-    /* ==========================================================================
-       GLASSMORPHISM MODE SWITCHER DOCK
-       ========================================================================== */
-    .mode-switcher-container {
-      display: flex;
-      justify-content: center;
-      margin: 4px 0 12px;
-    }
-
-    .mode-glass-dock {
-      display: inline-flex;
-      align-items: center;
-      position: relative;
-      padding: 6px;
-      background: var(--bg-glass-nav);
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--border-medium);
-      border-radius: var(--radius-full);
-      box-shadow: var(--shadow-glass);
-      gap: 6px;
-    }
-
-    .mode-tab-btn {
-      position: relative;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 28px;
-      border-radius: var(--radius-full);
-      border: 1px solid transparent;
-      background: transparent;
-      color: var(--text-muted);
-      font-family: var(--font-pixel);
-      font-size: 13px;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      transition: var(--transition);
-      user-select: none;
-      outline: none;
-    }
-
-    .mode-tab-btn:hover:not(.active) {
-      color: var(--text-pure);
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(255, 255, 255, 0.15);
-    }
-
-    .mode-tab-btn.active {
-      background: var(--bg-glass-active);
-      color: var(--text-dark);
-      font-weight: 700;
-      border-color: #ffffff;
-      box-shadow: 0 0 25px rgba(255, 255, 255, 0.4), 0 4px 15px rgba(0, 0, 0, 0.5);
-    }
-
-    .mode-tab-btn .tab-arrow {
-      font-family: var(--font-mono);
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .mode-tab-btn.active .tab-arrow {
-      color: var(--text-dark);
-    }
-
-    /* Tab Panels */
-    .mode-panel {
-      display: none;
-      animation: panelFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    .mode-panel.active {
-      display: block;
-    }
-
-    @keyframes panelFadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* ==========================================================================
-       DASHBOARD GRID & RETRO GLASS CARDS
-       ========================================================================== */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 24px;
-    }
-
-    @media (max-width: 1040px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .retro-glass-card {
-      background: var(--bg-card);
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      box-shadow: var(--shadow-glass);
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.25s ease;
-    }
-
-    .retro-glass-card:hover {
-      border-color: var(--border-medium);
-    }
-
-    .retro-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-      border-bottom: 1px dashed var(--border-subtle);
-      padding-bottom: 16px;
-    }
-
-    .card-title-group h2 {
-      font-family: var(--font-pixel);
-      font-size: 16px;
-      letter-spacing: 0.5px;
-      color: var(--text-pure);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .card-meta-tag {
-      font-family: var(--font-crt);
-      font-size: 18px;
-      color: var(--text-silver);
-      letter-spacing: 1px;
-    }
-
-    .card-desc {
-      font-size: 13.5px;
-      color: var(--text-silver);
-      line-height: 1.6;
-      margin-bottom: 22px;
-    }
-
-    /* Control Actions Section */
-    .controls-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      margin-bottom: 24px;
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    /* Retro Monochromatic Buttons */
-    .retro-btn {
-      padding: 13px 24px;
-      border-radius: var(--radius-sm);
-      font-family: var(--font-pixel);
-      font-size: 12px;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: var(--transition);
-      outline: none;
-      position: relative;
-      user-select: none;
-    }
-
-    .retro-btn-primary {
-      background: #ffffff;
-      color: #000000;
-      border: 1px solid #ffffff;
-      font-weight: 700;
-      box-shadow: 0 4px 18px rgba(255, 255, 255, 0.25);
-    }
-
-    .retro-btn-primary:hover:not(:disabled) {
-      background: #e4e4e7;
-      box-shadow: 0 6px 26px rgba(255, 255, 255, 0.45);
-      transform: translateY(-2px);
-    }
-
-    .retro-btn-primary.running {
-      background: #000000;
-      color: #ffffff;
-      border: 1px solid #ffffff;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
-      animation: pulseBorder 1.5s infinite;
-    }
-
-    @keyframes pulseBorder {
-      0%, 100% { border-color: rgba(255, 255, 255, 0.4); box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
-      50% { border-color: rgba(255, 255, 255, 1); box-shadow: 0 0 24px rgba(255, 255, 255, 0.5); }
-    }
-
-    .retro-btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-pure);
-      border: 1px solid var(--border-medium);
-      backdrop-filter: blur(12px);
-    }
-
-    .retro-btn-secondary:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: var(--border-bright);
-      transform: translateY(-2px);
-    }
-
-    .retro-btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-      transform: none !important;
-      border-color: var(--border-subtle);
-    }
-
-    /* Notification / Callout Banner */
-    .retro-callout {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border-subtle);
-      border-left: 3px solid #ffffff;
-      padding: 14px 18px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      line-height: 1.5;
-      color: var(--text-silver);
-    }
-
-    .retro-callout strong {
-      color: #ffffff;
-    }
-
-    .retro-callout code {
-      font-family: var(--font-mono);
-      background: rgba(255, 255, 255, 0.12);
-      padding: 2px 6px;
-      border-radius: 3px;
-      color: #ffffff;
-    }
-
-    /* Active Camera Alert Box */
-    .camera-active-alert {
-      display: none;
-      background: #000000;
-      border: 1px solid #ffffff;
-      border-radius: var(--radius-sm);
-      padding: 14px 18px;
-      margin-top: 14px;
-      font-size: 13px;
-      color: #ffffff;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.25);
-      animation: alertPulse 2s infinite;
-    }
-
-    .camera-active-alert.visible {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    @keyframes alertPulse {
-      0%, 100% { box-shadow: 0 0 10px rgba(255, 255, 255, 0.15); }
-      50% { box-shadow: 0 0 24px rgba(255, 255, 255, 0.4); }
-    }
-
-    /* Gesture Catalog Grid */
-    .gesture-catalog-header {
-      font-family: var(--font-pixel);
-      font-size: 12px;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin: 16px 0 12px;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .gesture-chips-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-    }
-
-    @media (max-width: 680px) {
-      .gesture-chips-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .gesture-chip {
-      background: rgba(10, 10, 10, 0.7);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      padding: 16px;
-      transition: var(--transition);
-      position: relative;
-    }
-
-    .gesture-chip:hover {
-      border-color: var(--border-bright);
-      background: rgba(20, 20, 20, 0.85);
-      transform: translateY(-2px);
-    }
-
-    .gesture-chip-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .gesture-code {
-      font-family: var(--font-crt);
-      font-size: 18px;
-      color: var(--text-muted);
-    }
-
-    .gesture-name {
-      font-family: var(--font-pixel);
-      font-size: 13px;
-      color: #ffffff;
-      letter-spacing: 0.5px;
-    }
-
-    .gesture-detail {
-      font-size: 12px;
-      color: var(--text-muted);
-      line-height: 1.45;
-    }
-
-    /* ==========================================================================
-       RETRO CRT TERMINAL
-       ========================================================================== */
-    .retro-terminal {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: #000000;
-      border: 1px solid var(--border-medium);
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      min-height: 380px;
-      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9), 0 0 15px rgba(255, 255, 255, 0.05);
-    }
-
-    .terminal-bar {
-      background: rgba(255, 255, 255, 0.05);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 10px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-family: var(--font-pixel);
-      font-size: 11px;
-      color: var(--text-silver);
-    }
-
-    .terminal-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .terminal-mini-btn {
-      background: transparent;
-      border: 1px solid var(--border-subtle);
-      color: var(--text-silver);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .terminal-mini-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: #ffffff;
-      border-color: var(--border-medium);
-    }
-
-    .terminal-screen {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-      max-height: 420px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-family: var(--font-mono);
-      font-size: 12.5px;
-      background: #000000;
-      color: var(--text-silver);
-    }
-
-    .terminal-line {
-      line-height: 1.45;
-      word-break: break-all;
-    }
-
-    .terminal-prompt {
-      font-family: var(--font-mono);
-      font-weight: 700;
-      color: var(--text-muted);
-      margin-right: 8px;
-      user-select: none;
-    }
-
-    .terminal-line.info { color: #ffffff; }
-    .terminal-line.success { color: #ffffff; font-weight: bold; }
-    .terminal-line.warning { color: #d4d4d8; text-decoration: underline; }
-    .terminal-line.error { color: #ffffff; background: rgba(255, 255, 255, 0.12); padding: 2px 4px; border-left: 2px solid #ffffff; }
-
-    .terminal-cursor {
-      display: inline-block;
-      width: 8px;
-      height: 14px;
-      background: #ffffff;
-      animation: cursorBlink 0.8s infinite;
-      vertical-align: middle;
-      margin-left: 4px;
-    }
-
-    @keyframes cursorBlink {
-      0%, 49% { opacity: 1; }
-      50%, 100% { opacity: 0; }
-    }
-
-    /* ==========================================================================
-       TEXT TO SIGN (MODE 2: ISHARAA TRANSLATOR IFRAME)
-       ========================================================================== */
-    .translator-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      height: calc(100vh - 140px);
-      min-height: 740px;
-      transition: var(--transition);
-    }
-
-    .translator-wrapper.expanded {
-      height: 94vh;
-      min-height: 980px;
-    }
-
-    .translator-glass-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--bg-card);
-      backdrop-filter: var(--glass-blur);
-      -webkit-backdrop-filter: var(--glass-blur);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 12px 20px;
-      box-shadow: var(--shadow-glass);
-    }
-
-    .translator-status {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--font-pixel);
-      font-size: 12px;
-      letter-spacing: 0.5px;
-      color: var(--text-silver);
-    }
-
-    .translator-status strong {
-      color: #ffffff;
-    }
-
-    .translator-frame-box {
-      flex: 1;
-      position: relative;
-      background: #000000;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-medium);
-      overflow: hidden;
-      box-shadow: var(--shadow-glass);
-      min-height: 680px;
-    }
-
-    /* Black strip overlay to cover the embedded website's navbar */
-    .iframe-navbar-strip {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 80px;
-      background: #000000;
-      z-index: 6;
-      border-bottom: 1px solid var(--border-subtle);
-      pointer-events: auto;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.95);
-    }
-
-    /* Black strip overlay to cover the embedded website's bottom links & footer */
-    .iframe-bottom-strip {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 160px;
-      background: #000000;
-      z-index: 6;
-      border-top: 1px solid var(--border-subtle);
-      pointer-events: auto;
-      box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.95);
-    }
-
-    .translator-frame-box iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
-      background: #000000;
-    }
-
-    .frame-loader-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: #000000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      z-index: 10;
-      transition: opacity 0.4s ease;
-      pointer-events: none;
-    }
-
-    .frame-loader-overlay.hidden {
-      opacity: 0;
-    }
-
-    .retro-spinner {
-      width: 36px;
-      height: 36px;
-      border: 2px dashed rgba(255, 255, 255, 0.3);
-      border-top-color: #ffffff;
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* ==========================================================================
-       RETRO GLASS MODAL (OFFLINE / HELP)
-       ========================================================================== */
-    .retro-modal-backdrop {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.82);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .retro-modal-backdrop.open {
-      display: flex;
-    }
-
-    .retro-modal-card {
-      background: #09090b;
-      border: 1px solid var(--border-bright);
-      border-radius: var(--radius-md);
-      box-shadow: 0 0 35px rgba(255, 255, 255, 0.25), 0 25px 60px rgba(0,0,0,0.9);
-      max-width: 540px;
-      width: 100%;
-      padding: 28px;
-      position: relative;
-      animation: modalSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    @keyframes modalSlide {
-      from { transform: scale(0.94); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .modal-title {
-      font-family: var(--font-pixel);
+      -webkit-font-smoothing: antialiased;
       font-size: 15px;
-      margin-bottom: 12px;
+      line-height: 1.45;
       display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #ffffff;
+      flex-direction: column;
+    }
+    /* soft ambient light so the glass has something to refract */
+    body::before, body::after {
+      content: ""; position: fixed; z-index: -1; border-radius: 50%; filter: blur(90px); pointer-events: none;
+    }
+    body::before { width: 56vw; height: 56vw; top: -18vw; left: -12vw; background: var(--blob-a); }
+    body::after  { width: 48vw; height: 48vw; bottom: -20vw; right: -10vw; background: var(--blob-b); }
+
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    :focus-visible { outline: 3px solid color-mix(in srgb, var(--busy) 55%, transparent); outline-offset: 2px; }
+
+    .glass {
+      background: var(--glass);
+      -webkit-backdrop-filter: var(--blur);
+      backdrop-filter: var(--blur);
+      border: 0.5px solid var(--hairline);
+      box-shadow: var(--shadow);
     }
 
-    .modal-body {
-      font-size: 13.5px;
-      color: var(--text-silver);
-      line-height: 1.6;
-      margin-bottom: 22px;
+    /* ======================================================================
+       Top bar
+       ====================================================================== */
+    .topbar {
+      position: sticky; top: 12px; z-index: 50;
+      margin: 12px auto 0; width: min(1240px, calc(100% - 24px));
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
+      padding: 8px 10px 8px 18px; border-radius: 999px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+      background: var(--primary); color: var(--on-primary);
+    }
+    .brand small { font-weight: 400; color: var(--text-2); font-size: 13px; }
+
+    .segmented {
+      display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: var(--fill);
+    }
+    .segmented button {
+      padding: 7px 18px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--text-2);
+      transition: background 0.25s var(--ease), color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+      white-space: nowrap;
+    }
+    .segmented button[aria-selected="true"] {
+      background: var(--thumb); color: var(--text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    }
+    .segmented.small button { padding: 5px 14px; font-size: 13px; }
+
+    .status {
+      justify-self: end; display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 14px; border-radius: 999px; background: var(--fill); font-size: 13px; color: var(--text-2);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none; }
+    .dot.online { background: var(--ok); }
+    .dot.running { background: var(--busy); animation: pulse 1.6s infinite; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--busy) 20%, transparent); } }
+
+    /* ======================================================================
+       Layout
+       ====================================================================== */
+    main { width: min(1240px, calc(100% - 24px)); margin: 24px auto 0; flex: 1; }
+    .panel { display: none; }
+    .panel.active { display: block; animation: rise 0.4s var(--ease); }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+
+    .card { border-radius: var(--radius-xl); padding: 22px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+    .sub { color: var(--text-2); font-size: 13px; }
+    .muted { color: var(--text-2); font-size: 14px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 40px; padding: 0 20px; border-radius: 999px; font-size: 15px; font-weight: 500;
+      transition: transform 0.15s var(--ease), opacity 0.2s, background 0.2s;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    .btn-primary { background: var(--primary); color: var(--on-primary); }
+    .btn-plain { background: var(--fill); }
+    .btn-plain:hover:not(:disabled) { background: var(--fill-2); }
+    .btn-lg { height: 48px; padding: 0 26px; font-size: 16px; }
+
+    .chip {
+      padding: 6px 12px; border-radius: 999px; font-size: 13px; background: var(--fill); color: var(--text);
+      transition: background 0.2s;
+    }
+    .chip:hover { background: var(--fill-2); }
+
+    .callout {
+      margin-top: 14px; padding: 12px 14px; border-radius: var(--radius-md); font-size: 13.5px;
+      background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--text);
+    }
+    .callout code, code.inline { font-family: var(--mono); font-size: 12.5px; background: var(--fill); padding: 1px 6px; border-radius: 6px; }
+
+    /* ======================================================================
+       Text -> Sign
+       ====================================================================== */
+    .t2s-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(340px, 1fr); gap: 20px; align-items: start; }
+    .stage-col, .side-col { display: flex; flex-direction: column; gap: 20px; }
+    @media (max-width: 980px) { .t2s-layout { grid-template-columns: 1fr; } }
+
+    /* the stage stays dark in both themes: light hands on a dark ground,
+       like an interpreter's backdrop */
+    .stage {
+      color-scheme: dark; color: #f5f5f7;
+      position: relative; border-radius: var(--radius-xl); overflow: hidden;
+      aspect-ratio: 4 / 3.4; min-height: 380px;
+      background: radial-gradient(120% 90% at 50% 30%, #2c2c30 0%, #141416 60%, #0b0b0c 100%);
+      box-shadow: var(--shadow);
+      border: 0.5px solid rgba(255, 255, 255, 0.06);
+    }
+    .stage canvas { width: 100%; height: 100%; display: block; }
+    .stage-caption {
+      position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%);
+      font-size: 22px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap; pointer-events: none;
+      padding: 6px 16px; border-radius: 999px; background: rgba(0, 0, 0, 0.28);
+      -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+      transition: opacity 0.2s;
+    }
+    .stage-caption:empty { opacity: 0; }
+    .stage-caption u { text-decoration: none; background: #f5f5f7; color: #000; border-radius: 6px; padding: 0 5px; margin: 0 1px; }
+    .stage-hint {
+      position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+      color: rgba(255, 255, 255, 0.45); font-size: 14px; padding-bottom: 40%;
     }
 
+    .player {
+      position: absolute; left: 14px; right: 14px; bottom: 14px;
+      display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 999px;
+      background: rgba(40, 40, 44, 0.55); border: 0.5px solid rgba(255, 255, 255, 0.1);
+      -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+    }
+    .icon-btn {
+      width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
+      color: #f5f5f7; transition: background 0.2s;
+    }
+    .icon-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
+    .icon-btn:disabled { opacity: 0.35; }
+    .icon-btn.solid { background: #f5f5f7; color: #000; }
+    .icon-btn.solid:hover { background: #fff; }
+    .icon-btn svg { width: 18px; height: 18px; }
+    .icon-btn .i-pause { display: none; }
+    .icon-btn.is-playing .i-pause { display: block; }
+    .icon-btn.is-playing .i-play { display: none; }
+    .track { flex: 1; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.18); overflow: hidden; margin: 0 8px; min-width: 40px; }
+    .track > div { height: 100%; width: 0; background: #f5f5f7; border-radius: 4px; }
+    .pill-select {
+      appearance: none; -webkit-appearance: none; height: 32px; padding: 0 26px 0 12px; border-radius: 999px;
+      border: none; background: rgba(255, 255, 255, 0.1) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%23f5f5f7' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 10px center;
+      color: #f5f5f7; font-size: 13px; cursor: pointer;
+    }
+    .toggle { position: relative; display: grid; place-items: center; }
+    .toggle input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .toggle:has(input:checked) { background: rgba(255, 255, 255, 0.22); }
+
+    .gloss-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 34px; }
+    .t2s-chip {
+      padding: 7px 13px; border-radius: 10px; font-size: 13.5px; font-weight: 600; letter-spacing: 0.02em;
+      background: var(--fill); transition: background 0.2s, color 0.2s, transform 0.2s var(--ease);
+    }
+    .t2s-chip:hover { background: var(--fill-2); }
+    .t2s-chip.fs { font-weight: 500; font-style: italic; color: var(--text-2); }
+    .t2s-chip.active { background: var(--primary); color: var(--on-primary); transform: translateY(-1px); }
+    .t2s-sep { width: 1px; height: 20px; background: var(--hairline); margin: 0 4px; }
+    .nmm-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .t2s-nmm { font-size: 12px; color: var(--text-2); padding: 4px 10px; border-radius: 999px; border: 0.5px solid var(--hairline); }
+    .stats { font-size: 13px; color: var(--text-2); }
+    .stats b { color: var(--text); font-weight: 600; }
+
+    .compose textarea {
+      width: 100%; min-height: 112px; resize: vertical; border: none; outline: none;
+      background: var(--fill); border-radius: var(--radius-md); padding: 14px 16px; font-size: 17px; line-height: 1.4;
+    }
+    .compose textarea::placeholder { color: var(--text-3); }
+    .compose textarea:focus { background: var(--glass-strong); box-shadow: 0 0 0 0.5px var(--hairline), 0 0 0 4px var(--fill); }
+    .mic-btn { position: relative; }
+    .mic-btn svg { flex: none; }
+    .mic-btn[data-state="listening"] { background: var(--primary); color: var(--on-primary); box-shadow: 0 0 0 calc(var(--level, 0) * 8px) var(--fill-2); }
+    .speech-status { min-height: 18px; margin-top: 8px; }
+    .auto-speak { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--text-2); cursor: pointer; }
+    .row-end { display: inline-flex; gap: 8px; }
+    .compose-row { flex-wrap: wrap; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+    kbd { font-family: var(--font); font-size: 12px; color: var(--text-2); background: var(--fill); padding: 2px 6px; border-radius: 5px; }
+    .suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+    .label { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin: 18px 0 8px; }
+
+    .details-body { max-height: 430px; overflow: auto; margin: 0 -6px; padding: 0 6px; scrollbar-width: thin; }
+    .t2s-trace-block { padding: 14px 0; border-top: 0.5px solid var(--hairline); }
+    .t2s-trace-block:first-child { border-top: none; padding-top: 4px; }
+    .t2s-trace-head { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+    .t2s-row { display: grid; grid-template-columns: 96px 1fr; gap: 10px; padding: 3px 0; font-size: 13px; }
+    .t2s-row span { color: var(--text-3); }
+    .t2s-row code { font-family: var(--mono); font-size: 12.5px; color: var(--text-2); word-break: break-word; }
+    .t2s-row code i { font-style: normal; color: var(--text-3); font-size: 11px; margin: 0 6px 0 2px; }
+    .t2s-gloss-line { color: var(--text) !important; font-weight: 600; }
+
+    .search {
+      width: 100%; height: 36px; border: none; outline: none; border-radius: 10px; padding: 0 12px 0 34px;
+      background: var(--fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%238e8e93' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='6' cy='6' r='4.8'/%3E%3Cpath d='M9.6 9.6L13 13'/%3E%3C/svg%3E") no-repeat 12px center;
+      font-size: 14px; margin-bottom: 10px;
+    }
+    .t2s-dict-list { display: flex; flex-direction: column; }
+    .t2s-dict-item {
+      display: flex; flex-direction: column; gap: 1px; text-align: left; padding: 10px 10px; border-radius: 12px;
+      transition: background 0.15s;
+    }
+    .t2s-dict-item:hover { background: var(--fill); }
+    .t2s-dict-item b { font-size: 14px; font-weight: 600; }
+    .t2s-dict-item span { font-size: 12.5px; color: var(--text-2); }
+
+    /* ======================================================================
+       Sign -> Text
+       ====================================================================== */
+    .hero-icon {
+      width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 18px; display: grid; place-items: center;
+      background: var(--fill); color: var(--text);
+    }
+    .hero-icon svg { width: 30px; height: 30px; }
+
+
+    /* ---- Sign -> Text camera ---- */
+    .cam-stage { aspect-ratio: 4 / 3; min-height: 0; background: #0b0b0c; }
+    .cam-stage video, .cam-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    .cam-stage video { transform: scaleX(-1); }
+    .cam-hint {
+      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 24px 24px 90px; gap: 6px;
+    }
+    .cam-hint .hero-icon { background: rgba(255, 255, 255, 0.1); color: #f5f5f7; margin-bottom: 10px; }
+    .cam-hint h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+    .cam-hint p { color: rgba(255, 255, 255, 0.6); max-width: 400px; font-size: 14.5px; margin-bottom: 14px; }
+    .cam-start { background: #f5f5f7; color: #000; }
+    .pill-stat { font-size: 12.5px; color: rgba(255, 255, 255, 0.75); padding: 0 8px; font-variant-numeric: tabular-nums; }
+    .prob-list { display: flex; flex-direction: column; gap: 4px; }
+    .prob-row { padding: 10px 12px; border-radius: 14px; transition: background 0.2s; }
+    .prob-row.active { background: var(--fill); }
+    .prob-top { display: flex; justify-content: space-between; font-size: 14.5px; }
+    .prob-top b { font-weight: 600; }
+    .prob-pct { color: var(--text-2); font-variant-numeric: tabular-nums; font-size: 13px; }
+    .prob-how { font-size: 12.5px; color: var(--text-3); margin: 1px 0 7px; }
+    .prob-bar { height: 5px; border-radius: 5px; background: var(--fill); overflow: hidden; }
+    .prob-bar > div { height: 100%; width: 0; border-radius: 5px; background: var(--text-3); transition: width 0.15s linear; }
+    .prob-row.active .prob-bar > div { background: var(--primary); }
+    .how { margin-bottom: 12px; font-size: 13.5px; }
+    button.prob-row { width: 100%; text-align: left; cursor: pointer; }
+    button.prob-row:hover { background: var(--fill); }
+    .vocab-list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 210px; overflow: auto; margin-bottom: 14px; scrollbar-width: thin; }
+    .vocab-chip { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--fill); }
+    .tips { padding-left: 18px; color: var(--text-2); font-size: 14px; display: grid; gap: 6px; }
+
+    /* ======================================================================
+       Dialog
+       ====================================================================== */
+    dialog {
+      margin: auto; border: 0.5px solid var(--hairline); border-radius: var(--radius-xl); padding: 26px;
+      width: min(460px, calc(100% - 32px)); color: var(--text);
+      background: var(--glass-strong); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+    }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.25); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+    dialog h3 { font-size: 19px; font-weight: 600; margin-bottom: 8px; }
+    dialog p { color: var(--text-2); font-size: 14.5px; }
     .code-box {
-      background: #000000;
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      padding: 12px 16px;
-      margin: 14px 0;
-      font-family: var(--font-mono);
-      font-size: 13px;
-      color: #ffffff;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 0 22px;
+      padding: 10px 10px 10px 14px; border-radius: var(--radius-md); background: var(--fill); font-family: var(--mono); font-size: 13px;
     }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
+    footer { text-align: center; color: var(--text-3); font-size: 12.5px; padding: 36px 16px 28px; }
+
+    @media (max-width: 720px) {
+      .topbar { grid-template-columns: 1fr auto; border-radius: 22px; }
+      .topbar .segmented { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+      .brand small { display: none; }
+      .player .pill-select { display: none; }
     }
-
-    /* Footer */
-    footer {
-      text-align: center;
-      padding: 24px;
-      font-family: var(--font-pixel);
-      font-size: 11px;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      border-top: 1px solid var(--border-subtle);
-      margin-top: auto;
-      background: rgba(5, 5, 5, 0.85);
-      backdrop-filter: blur(12px);
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Retro Scanline Overlay -->
-  <div class="scanlines-overlay" id="scanlines-layer" aria-hidden="true"></div>
-
-  <!-- Header -->
-  <header>
-    <div class="brand-cluster">
-      <div class="logo-badge" aria-hidden="true">🤟</div>
-      <div class="brand-text">
-        <h1>ISHARAA <span class="brand-edition-tag">DETR // RETRO</span></h1>
-        <div class="brand-sub">BIDIRECTIONAL SIGN LANGUAGE NEURAL INTERFACE</div>
-      </div>
+  <header class="topbar glass">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 11.5v-7a1.5 1.5 0 0 1 3 0V12"/><path d="M14 6.5a1.5 1.5 0 0 1 3 0V13"/><path d="M8 13l-1.4-1.6a1.6 1.6 0 0 0-2.5 2l3.2 4.4A6 6 0 0 0 12.2 20H13a5 5 0 0 0 5-5v-3.5a1.5 1.5 0 0 0-1-1.4"/></svg>
+      </span>
+      Ishaara <small>Sign, text and speech</small>
     </div>
-
-    <div class="header-controls">
-      <!-- CRT Scanline Toggle -->
-      <button class="crt-toggle-btn active" id="btn-crt-toggle" onclick="toggleCRT()" title="Toggle Scanline Simulation">
-        CRT: ON
-      </button>
-
-      <!-- Bridge Status Beacon -->
-      <div class="telemetry-pill" id="telemetry-box">
-        <span class="status-beacon" id="status-beacon"></span>
-        <span id="telemetry-text">PROBING BRIDGE...</span>
-      </div>
-    </div>
+    <nav class="segmented" role="tablist" aria-label="Mode">
+      <button role="tab" id="tab-text-to-sign" aria-controls="panel-text-to-sign" aria-selected="true" onclick="switchMode('text-to-sign')">Text to Sign</button>
+      <button role="tab" id="tab-sign-to-text" aria-controls="panel-sign-to-text" aria-selected="false" onclick="switchMode('sign-to-text')">Sign to Text</button>
+    </nav>
+    <div class="status" role="status"><span class="dot" id="status-beacon"></span><span id="telemetry-text">Connecting…</span></div>
   </header>
 
-  <!-- Main Content Container -->
   <main>
+    <!-- ==================================================================
+         TEXT TO SIGN: English -> ASL gloss -> 3D signing avatar
+         ================================================================== -->
+    <section class="panel active" id="panel-text-to-sign" role="tabpanel" aria-labelledby="tab-text-to-sign">
+      <div class="t2s-layout">
 
-    <!-- ========================================================================
-         GLASSMORPHIC MODE SWITCHER (SIGN TO TEXT <-> TEXT TO SIGN)
-         ======================================================================== -->
-    <div class="mode-switcher-container">
-      <nav class="mode-glass-dock" aria-label="Detection and Translation Mode Selector">
-        <button class="mode-tab-btn active" id="tab-sign-to-text" onclick="switchMode('sign-to-text')">
-          <span class="tab-arrow">[ &gt; ]</span>
-          <span>SIGN TO TEXT // DETR</span>
-        </button>
-        <button class="mode-tab-btn" id="tab-text-to-sign" onclick="switchMode('text-to-sign')">
-          <span class="tab-arrow">[ // ]</span>
-          <span>TEXT TO SIGN // TRANSLATE</span>
-        </button>
-      </nav>
-    </div>
-
-    <!-- ========================================================================
-         MODE 1: SIGN TO TEXT (REAL-TIME DETR DETECTION)
-         ======================================================================== -->
-    <section class="mode-panel active" id="panel-sign-to-text" aria-labelledby="tab-sign-to-text">
-      <div class="dashboard-grid">
-
-        <!-- Left Column: Controller Card & Gesture Matrix -->
-        <div class="retro-glass-card">
-          <div class="retro-card-header">
-            <div class="card-title-group">
-              <h2>[01] DETR RECOGNITION CONTROLLER</h2>
-              <div class="card-meta-tag">VISION TRANSFORMER // REALTIME</div>
-            </div>
-          </div>
-
-          <p class="card-desc">
-            Executes the trained DEtection TRansformer (ResNet-50 backbone) on your live camera stream. 
-            Real-time inference predicts sign classes and bounding boxes at 30 FPS.
-          </p>
-
-          <div class="controls-panel">
-            <div class="btn-row">
-              <button class="retro-btn retro-btn-primary" id="btn-start-detection" onclick="handleStartClick()">
-                <span>[ ▶ ] LAUNCH REAL-TIME DETECTION</span>
+        <div class="stage-col">
+          <div class="stage">
+            <canvas id="t2s-canvas" aria-label="Signing avatar"></canvas>
+            <div class="stage-hint" id="t2s-hint">Type a sentence to see it signed</div>
+            <div class="stage-caption" id="t2s-caption" aria-live="polite"></div>
+            <div class="player" role="toolbar" aria-label="Playback">
+              <button class="icon-btn solid" id="t2s-btn-play" aria-label="Play">
+                <svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/></svg>
+                <svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>
               </button>
-              <button class="retro-btn retro-btn-secondary" id="btn-stop-detection" onclick="stopDetection()" disabled>
-                <span>[ ⏹ ] STOP DETECTION</span>
+              <button class="icon-btn" id="t2s-btn-replay" aria-label="Replay">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
               </button>
-              <button class="retro-btn retro-btn-secondary" id="btn-refresh-status" onclick="checkStatus(true)">
-                <span>[ ⟲ ] REFRESH</span>
+              <div class="track" aria-hidden="true"><div id="t2s-progress"></div></div>
+              <select class="pill-select" id="t2s-speed" aria-label="Signing speed">
+                <option value="0.5">0.5×</option><option value="0.75">0.75×</option>
+                <option value="1" selected>1×</option><option value="1.25">1.25×</option>
+              </select>
+              <select class="pill-select" id="t2s-view" aria-label="Camera">
+                <option value="front">Front</option><option value="side">Side</option><option value="close">Close-up</option>
+              </select>
+              <label class="icon-btn toggle" title="Loop">
+                <input type="checkbox" id="t2s-loop" aria-label="Loop">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>
+              </label>
+              <button class="icon-btn" id="t2s-btn-export" aria-label="Export video" title="Export video">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
               </button>
             </div>
-
-            <!-- Active OpenCV Window Notice -->
-            <div class="camera-active-alert" id="camera-active-banner">
-              <span style="font-size: 18px;">🖥️</span>
-              <div>
-                <strong>OPENCV WINDOW ACTIVE:</strong> A native camera window titled <code>Frame</code> is now rendering live detections on your screen. Press <kbd style="background:#fff; color:#000; padding:1px 5px; border-radius:2px; font-weight:bold;">q</kbd> in that window or click <strong>STOP</strong> above to end.
-              </div>
-            </div>
-
-            <!-- Instructions Callout -->
-            <div class="retro-callout">
-              <strong>TELEMETRY INFO:</strong> Inference runs via the local Python bridge. When launched, the model loads weights from <code>pretrained/4426_model.pt</code> and opens OpenCV capture.
-            </div>
           </div>
 
-          <!-- Supported Gesture Vocabulary Catalog -->
-          <div class="gesture-catalog-header">
-            <span>[+] RECOGNIZED GESTURE VOCABULARY</span>
-          </div>
-          <div class="gesture-chips-grid">
-            <div class="gesture-chip">
-              <div class="gesture-chip-top">
-                <span class="gesture-name">HELLO</span>
-                <span class="gesture-code">#01</span>
-              </div>
-              <div class="gesture-detail">Open palm facing camera in greeting wave gesture.</div>
+          <div class="card glass">
+            <div class="card-head">
+              <h2>Gloss</h2>
+              <div class="stats" id="t2s-stats"></div>
             </div>
-            <div class="gesture-chip">
-              <div class="gesture-chip-top">
-                <span class="gesture-name">ILOVEYOU</span>
-                <span class="gesture-code">#02</span>
-              </div>
-              <div class="gesture-detail">Thumb, index, and pinky extended upward (ILY sign).</div>
-            </div>
-            <div class="gesture-chip">
-              <div class="gesture-chip-top">
-                <span class="gesture-name">THANKYOU</span>
-                <span class="gesture-code">#03</span>
-              </div>
-              <div class="gesture-detail">Flat hand moving forward from chin toward camera.</div>
-            </div>
-            <div class="gesture-chip">
-              <div class="gesture-chip-top">
-                <span class="gesture-name">ZERO</span>
-                <span class="gesture-code">#04</span>
-              </div>
-              <div class="gesture-detail">Fingers and thumb touching to form an 'O' shape (Sign 0).</div>
-            </div>
-            <div class="gesture-chip">
-              <div class="gesture-chip-top">
-                <span class="gesture-name">ONE</span>
-                <span class="gesture-code">#05</span>
-              </div>
-              <div class="gesture-detail">Index finger pointing upright with fist closed (Sign 1).</div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Right Column: Retro CRT Console & Logs -->
-        <div class="retro-glass-card">
-          <div class="retro-card-header">
-            <div class="card-title-group">
-              <h2>[02] SYSTEM TELEMETRY &amp; LOGS</h2>
-              <div class="card-meta-tag">STDOUT_STREAM // FIFO</div>
-            </div>
-          </div>
-
-          <div class="retro-terminal">
-            <div class="terminal-bar">
-              <span id="terminal-status-tag">STATUS: READY</span>
-              <div class="terminal-actions">
-                <button class="terminal-mini-btn" onclick="clearLogs()">CLEAR</button>
-                <button class="terminal-mini-btn" onclick="copyTerminalLogs()">COPY</button>
-              </div>
-            </div>
-            <div class="terminal-screen" id="terminal-screen">
-              <div class="terminal-line"><span class="terminal-prompt">&gt;</span> Isharaa Retro Neural Interface initialized.</div>
-              <div class="terminal-line info"><span class="terminal-prompt">&gt;</span> Ready. Click "LAUNCH REAL-TIME DETECTION" to begin.</div>
+            <p class="muted" id="t2s-empty">The ASL gloss appears here. Click any sign to jump to it.</p>
+            <div id="t2s-results" hidden>
+              <div class="gloss-chips" id="t2s-gloss"></div>
+              <div class="nmm-row" id="t2s-nmm"></div>
             </div>
           </div>
         </div>
+
+        <aside class="side-col">
+          <div class="card glass compose">
+            <div class="card-head"><h2>Translate</h2><span class="sub">English → ASL</span></div>
+            <textarea id="t2s-input" placeholder="Type or speak something to sign…" aria-label="English text to translate">Hello, my name is Ishaara. Nice to meet you!</textarea>
+            <div class="compose-row">
+              <button class="btn btn-plain mic-btn" id="speech-mic" data-state="idle" aria-pressed="false">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+                <span>Speak</span>
+              </button>
+              <button class="btn btn-primary" id="t2s-btn-translate">Sign it</button>
+            </div>
+            <div class="sub speech-status" id="speech-status" aria-live="polite"></div>
+            <div class="callout" id="t2s-error" hidden></div>
+            <div class="label">Try</div>
+            <div class="suggestions">
+              <button class="chip t2s-example" data-text="What is your name?">What is your name?</button>
+              <button class="chip t2s-example" data-text="I went to school yesterday.">I went to school yesterday.</button>
+              <button class="chip t2s-example" data-text="Do you want water?">Do you want water?</button>
+              <button class="chip t2s-example" data-text="I don't understand.">I don't understand.</button>
+              <button class="chip t2s-example" data-text="Thank you, I love you!">Thank you, I love you!</button>
+              <button class="chip t2s-example" data-text="Where is the bathroom?">Where is the bathroom?</button>
+            </div>
+          </div>
+
+          <div class="card glass">
+            <div class="card-head">
+              <div class="segmented small" role="tablist" aria-label="Details">
+                <button role="tab" id="dtab-pipeline" aria-selected="true" onclick="switchDetails('pipeline')">How it works</button>
+                <button role="tab" id="dtab-dict" aria-selected="false" onclick="switchDetails('dict')">Dictionary</button>
+              </div>
+              <span class="sub" id="t2s-dict-count"></span>
+            </div>
+            <div class="details-body" id="dpane-pipeline">
+              <div id="t2s-trace"><p class="muted">Each step of the translation, from English words to signs, is shown here.</p></div>
+            </div>
+            <div class="details-body" id="dpane-dict" hidden>
+              <input class="search" id="t2s-dict-search" type="search" placeholder="Search signs" aria-label="Search the sign dictionary">
+              <div class="t2s-dict-list" id="t2s-dict-list"></div>
+            </div>
+          </div>
+        </aside>
 
       </div>
     </section>
 
-    <!-- ========================================================================
-         MODE 2: TEXT TO SIGN (ISHARAA SIGN TRANSLATOR)
-         ======================================================================== -->
-    <section class="mode-panel" id="panel-text-to-sign" aria-labelledby="tab-text-to-sign">
-      <div class="translator-wrapper">
-        <div class="translator-glass-toolbar">
-          <div class="translator-status">
-            <span>[ // ] TRANSLATION ENGINE:</span>
-            <strong>ISHARAA SIGN LANGUAGE TRANSLATOR</strong>
-          </div>
-          <div style="display: flex; gap: 10px;">
-            <button class="retro-btn retro-btn-secondary" id="btn-toggle-height" style="padding: 8px 16px; font-size: 11px;" onclick="toggleFrameHeight()">
-              [ ↕ ] EXPAND HEIGHT
-            </button>
-            <button class="retro-btn retro-btn-secondary" style="padding: 8px 16px; font-size: 11px;" onclick="reloadIframe()">
-              [ ⟲ ] RELOAD FRAME
-            </button>
-            <a href="https://rylo.com/sign/translate/" target="_blank" rel="noopener noreferrer" class="retro-btn retro-btn-primary" style="padding: 8px 16px; font-size: 11px; text-decoration: none;">
-              [ ↗ ] OPEN FULL TAB
-            </a>
-          </div>
-        </div>
+    <!-- ==================================================================
+         SIGN TO TEXT: real-time DETR recognition
+         ================================================================== -->
+    <section class="panel" id="panel-sign-to-text" role="tabpanel" aria-labelledby="tab-sign-to-text">
+      <div class="t2s-layout">
 
-        <div class="translator-frame-box">
-          <!-- Black strip overlay covering the embedded website's top navbar -->
-          <div class="iframe-navbar-strip" id="iframe-navbar-strip" title="Covering embedded navbar"></div>
-
-          <!-- Black strip overlay covering the embedded website's bottom footer and links -->
-          <div class="iframe-bottom-strip" id="iframe-bottom-strip" title="Covering embedded footer and links"></div>
-
-          <div class="frame-loader-overlay" id="frame-loader">
-            <div class="retro-spinner"></div>
-            <div style="font-family: var(--font-pixel); font-size: 12px; color: var(--text-silver); letter-spacing: 1px;">
-              LOADING TRANSLATION SYSTEM...
+        <div class="stage-col">
+          <div class="stage cam-stage">
+            <video id="s2t-video" playsinline muted aria-label="Camera preview"></video>
+            <canvas id="s2t-overlay" aria-hidden="true"></canvas>
+            <div class="cam-hint" id="s2t-hint">
+              <div class="hero-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l5-3v10l-5-3"/><rect x="3" y="6" width="12" height="12" rx="3"/></svg>
+              </div>
+              <h1>Sign to the camera</h1>
+              <p>Sign words to your camera. Your hands and body are tracked in this page, and the signs are recognised on this computer.</p>
+              <button class="btn btn-lg cam-start" id="s2t-start">Start camera</button>
+            </div>
+            <div class="stage-caption" id="s2t-caption" aria-live="polite"></div>
+            <div class="player" role="toolbar" aria-label="Camera">
+              <button class="icon-btn solid" id="s2t-toggle" aria-label="Start camera">
+                <svg class="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l5-3v10l-5-3"/><rect x="3" y="6" width="12" height="12" rx="3"/></svg>
+                <svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+              </button>
+              <span class="pill-stat" id="s2t-fps">— fps</span>
+              <span class="pill-stat" id="s2t-latency">— ms</span>
+              <span style="flex:1"></span>
+              <select class="pill-select" id="s2t-camera" aria-label="Camera" hidden></select>
             </div>
           </div>
-          <iframe 
-            id="isharaa-frame" 
-            src="https://rylo.com/sign/translate/" 
-            title="Isharaa Sign Language Translator" 
-            allow="camera; microphone; display-capture; autoplay"
-            loading="lazy"
-            onload="hideIframeLoader()">
-          </iframe>
+
+          <div class="card glass">
+            <div class="card-head"><h2>Transcript</h2><span class="sub">Recognised words in order</span></div>
+            <p class="muted" id="s2t-empty">Words you sign appear here.</p>
+            <div class="gloss-chips" id="s2t-transcript"></div>
+            <div class="compose-row">
+              <span class="row-end">
+                <button class="btn btn-plain" id="s2t-undo" disabled>Undo</button>
+                <button class="btn btn-plain" id="s2t-clear" disabled>Clear</button>
+              </span>
+              <label class="auto-speak" id="s2t-autospeak-wrap"><input type="checkbox" id="s2t-autospeak"> Read signs aloud</label>
+              <span class="row-end">
+                <button class="btn btn-plain" id="s2t-speak" disabled>Speak</button>
+                <button class="btn btn-primary" id="s2t-sign-back" disabled title="Send the transcript to the signing avatar">Sign it back</button>
+              </span>
+            </div>
+          </div>
         </div>
+
+        <aside class="side-col">
+          <div class="card glass">
+            <div class="card-head">
+              <div class="segmented small" role="tablist" aria-label="Recognition mode">
+                <button role="tab" id="s2t-mode-words" aria-selected="true">Words</button>
+                <button role="tab" id="s2t-mode-shapes" aria-selected="false">Handshapes</button>
+              </div>
+              <span class="sub" id="s2t-model">Loading…</span>
+            </div>
+            <p class="muted how" id="s2t-how">Raise your hands to sign a word, then lower them. Each word is recognised from your hand and arm movement.</p>
+            <div class="callout" id="s2t-error" hidden></div>
+            <div id="s2t-words-pane">
+              <div class="label">Top guesses</div>
+              <p class="sub" id="s2t-words-status" aria-live="polite">Start the camera to begin.</p>
+              <div class="prob-list" id="s2t-cands"></div>
+            </div>
+            <div id="s2t-shapes-pane" hidden>
+              <div class="prob-list" id="s2t-probs"></div>
+            </div>
+          </div>
+          <div class="card glass">
+            <div class="card-head"><h2>Signs it knows</h2><span class="sub" id="s2t-vocab-count"></span></div>
+            <input class="search" id="s2t-vocab-search" type="search" placeholder="Search words" aria-label="Search recognisable signs">
+            <div class="vocab-list" id="s2t-vocab"></div>
+            <ul class="tips">
+              <li>Keep your head, shoulders and hands in view, about an arm's length from the camera.</li>
+              <li>Use even light and a plain background.</li>
+            </ul>
+          </div>
+        </aside>
+
       </div>
     </section>
-
   </main>
 
-  <!-- ==========================================================================
-       OFFLINE / SETUP HELP MODAL
-       ========================================================================== -->
-  <div class="retro-modal-backdrop" id="offline-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-text">
-    <div class="retro-modal-card">
-      <h3 class="modal-title" id="modal-title-text">
-        <span>⚠️</span>
-        <span>BRIDGE SERVER OFFLINE</span>
-      </h3>
-      <div class="modal-body">
-        The Python bridge server is required to launch the DEtection TRansformer camera detector.
-        Please start the bridge server in your terminal:
-        <div class="code-box">
-          <code id="server-command-text">uv run python app.py</code>
-          <button class="terminal-mini-btn" id="modal-copy-btn" onclick="copyServerCmd()">COPY</button>
-        </div>
-        Alternatively, if using the project's virtualenv directly:
-        <div class="code-box">
-          <code>./.venv/bin/python app.py</code>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button class="retro-btn retro-btn-secondary" onclick="closeModal()">CLOSE</button>
-        <button class="retro-btn retro-btn-primary" onclick="retryConnection()">RETRY CONNECTION</button>
-      </div>
+  <dialog id="offline-modal" aria-labelledby="modal-title-text">
+    <h3 id="modal-title-text">Server not running</h3>
+    <p>Ishaara needs its local server for translation, speech and sign recognition. Start it in a terminal, then try again.</p>
+    <div class="code-box">
+      <code id="server-command-text">uv run python app.py</code>
+      <button class="chip" id="modal-copy-btn" onclick="copyServerCmd()">Copy</button>
     </div>
-  </div>
+    <div class="dialog-actions">
+      <button class="btn btn-plain" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" onclick="retryConnection()">Try again</button>
+    </div>
+  </dialog>
 
-  <!-- Footer -->
-  <footer>
-    ISHARAA // TWO-WAY SIGN LANGUAGE PLATFORM • DETR (RESNET-50) &amp; ISHARAA TRANSLATOR • MONOCHROME RETRO EDITION
-  </footer>
+  <footer>Ishaara · 200-word ASL recognition, on-device speech, and an English-to-ASL signing avatar</footer>
 
-  <!-- ==========================================================================
-       APPLICATION LOGIC & BRIDGE COMMUNICATION
-       ========================================================================== -->
   <script>
-    // Multi-port candidate list for smart bridge endpoint discovery
-    const CANDIDATE_HOSTS = [
-      window.location.origin.startsWith('http') ? window.location.origin : null,
-      'http://localhost:8000',
-      'http://127.0.0.1:8000',
-      'http://localhost:8001'
-    ].filter(Boolean);
+    // Same origin when served by app.py; when index.html is opened as a file, use the local server
+    const API_BASE = window.location.origin.startsWith('http') ? '' : 'http://localhost:8000';
+    window.getApiBase = () => API_BASE;
 
-    let activeApiBase = CANDIDATE_HOSTS[0] || 'http://localhost:8000';
-    let isBridgeOnline = false;
-    let isDetectionRunning = false;
-    let pollInterval = null;
-    let lastLogIndex = 0;
-
-    // CRT Scanline Toggle
-    function toggleCRT() {
-      const layer = document.getElementById('scanlines-layer');
-      const btn = document.getElementById('btn-crt-toggle');
-      layer.classList.toggle('disabled');
-      const enabled = !layer.classList.contains('disabled');
-      btn.textContent = enabled ? 'CRT: ON' : 'CRT: OFF';
-      btn.classList.toggle('active', enabled);
-    }
-
-    // Glassmorphic Mode Switcher
+    // ---------------------------------------------------------------- tabs
     function switchMode(mode) {
-      const tabSign = document.getElementById('tab-sign-to-text');
-      const tabText = document.getElementById('tab-text-to-sign');
-      const panelSign = document.getElementById('panel-sign-to-text');
-      const panelText = document.getElementById('panel-text-to-sign');
+      for (const m of ['text-to-sign', 'sign-to-text']) {
+        const on = m === mode;
+        document.getElementById(`tab-${m}`).setAttribute('aria-selected', on);
+        document.getElementById(`panel-${m}`).classList.toggle('active', on);
+      }
+      history.replaceState(null, '', location.search + '#' + mode);
+      if (mode === 'text-to-sign') window.initTextToSign?.();
+      else window.initSignToText?.();
+    }
 
-      if (mode === 'sign-to-text') {
-        tabSign.classList.add('active');
-        tabText.classList.remove('active');
-        panelSign.classList.add('active');
-        panelText.classList.remove('active');
-      } else {
-        tabText.classList.add('active');
-        tabSign.classList.remove('active');
-        panelText.classList.add('active');
-        panelSign.classList.remove('active');
+    function switchDetails(which) {
+      for (const k of ['pipeline', 'dict']) {
+        document.getElementById(`dtab-${k}`).setAttribute('aria-selected', k === which);
+        document.getElementById(`dpane-${k}`).hidden = k !== which;
       }
     }
 
-    // Modal helpers
-    function openModal() {
-      document.getElementById('offline-modal').classList.add('open');
-    }
-
-    function closeModal() {
-      document.getElementById('offline-modal').classList.remove('open');
-    }
-
+    // ---------------------------------------------------------------- dialog
+    function openModal() { const d = document.getElementById('offline-modal'); if (!d.open) d.showModal(); }
+    function closeModal() { document.getElementById('offline-modal').close(); }
     function copyServerCmd() {
-      const cmd = document.getElementById('server-command-text').innerText;
-      navigator.clipboard.writeText(cmd).then(() => {
+      navigator.clipboard.writeText(document.getElementById('server-command-text').innerText).then(() => {
         const btn = document.getElementById('modal-copy-btn');
-        btn.textContent = 'COPIED!';
-        setTimeout(() => { btn.textContent = 'COPY'; }, 2000);
+        btn.textContent = 'Copied';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
       });
     }
-
-    function retryConnection() {
+    async function retryConnection() {
       closeModal();
-      discoverAndCheckStatus(true);
+      if (!(await pingServer())) openModal();
     }
 
-    // Iframe Loader Helpers
-    function reloadIframe() {
-      const loader = document.getElementById('frame-loader');
-      loader.classList.remove('hidden');
-      const iframe = document.getElementById('isharaa-frame');
-      iframe.src = iframe.src;
+    // ---------------------------------------------------------------- status pill
+    let serverOnline = false, cameraLive = false;
+    function renderStatus() {
+      document.getElementById('status-beacon').className = 'dot ' + (cameraLive ? 'running' : serverOnline ? 'online' : '');
+      document.getElementById('telemetry-text').textContent = cameraLive ? 'Camera live' : serverOnline ? 'Connected' : 'Offline';
     }
-
-    function hideIframeLoader() {
-      const loader = document.getElementById('frame-loader');
-      if (loader) loader.classList.add('hidden');
-    }
-
-    function toggleFrameHeight() {
-      const wrapper = document.querySelector('.translator-wrapper');
-      const btn = document.getElementById('btn-toggle-height');
-      wrapper.classList.toggle('expanded');
-      const isExpanded = wrapper.classList.contains('expanded');
-      btn.innerHTML = isExpanded ? '[ ⇕ ] NORMAL HEIGHT' : '[ ↕ ] EXPAND HEIGHT';
-    }
-
-    // Terminal Logging Functions
-    function appendTerminal(text, type = '') {
-      const screen = document.getElementById('terminal-screen');
-      const line = document.createElement('div');
-      line.className = `terminal-line ${type}`;
-      line.innerHTML = `<span class="terminal-prompt">&gt;</span> ${escapeHtml(text)}`;
-      screen.appendChild(line);
-      screen.scrollTop = screen.scrollHeight;
-    }
-
-    function clearLogs() {
-      document.getElementById('terminal-screen').innerHTML = '';
-      lastLogIndex = 0;
-      appendTerminal('Logs buffer cleared.', 'info');
-    }
-
-    function copyTerminalLogs() {
-      const text = document.getElementById('terminal-screen').innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        appendTerminal('Console output copied to clipboard.', 'success');
-      });
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    }
-
-    // State Synchronization
-    function updateUIState(online, running, pid = null) {
-      const beacon = document.getElementById('status-beacon');
-      const telemetryText = document.getElementById('telemetry-text');
-      const startBtn = document.getElementById('btn-start-detection');
-      const stopBtn = document.getElementById('btn-stop-detection');
-      const activeBanner = document.getElementById('camera-active-banner');
-      const termStatus = document.getElementById('terminal-status-tag');
-
-      isBridgeOnline = online;
-      isDetectionRunning = running;
-
-      if (!online) {
-        beacon.className = 'status-beacon';
-        telemetryText.textContent = 'BRIDGE: OFFLINE';
-        startBtn.classList.remove('running');
-        startBtn.innerHTML = '<span>[ ▶ ] LAUNCH REAL-TIME DETECTION</span>';
-        stopBtn.disabled = true;
-        activeBanner.classList.remove('visible');
-        termStatus.textContent = 'STATUS: OFFLINE';
-        return;
-      }
-
-      if (running) {
-        beacon.className = 'status-beacon active-run';
-        telemetryText.textContent = `DETECTION: ACTIVE (PID ${pid || '--'})`;
-        startBtn.disabled = true;
-        startBtn.classList.add('running');
-        startBtn.innerHTML = '<span>[ ⚡ ] RUNNING CAMERA INFERENCE...</span>';
-        stopBtn.disabled = false;
-        activeBanner.classList.add('visible');
-        termStatus.textContent = `STATUS: ACTIVE (PID: ${pid})`;
-      } else {
-        beacon.className = 'status-beacon online';
-        telemetryText.textContent = 'BRIDGE: ONLINE';
-        startBtn.disabled = false;
-        startBtn.classList.remove('running');
-        startBtn.innerHTML = '<span>[ ▶ ] LAUNCH REAL-TIME DETECTION</span>';
-        stopBtn.disabled = true;
-        activeBanner.classList.remove('visible');
-        termStatus.textContent = 'STATUS: IDLE';
-      }
-    }
-
-    // Smart Endpoint Discovery and Status Probe
-    async function discoverAndCheckStatus(manual = false) {
-      let foundOnline = false;
-
-      // Probe active host first
-      const hostsToTest = [activeApiBase, ...CANDIDATE_HOSTS.filter(h => h !== activeApiBase)];
-
-      for (const host of hostsToTest) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 1200);
-          const res = await fetch(`${host}/api/status`, { 
-            cache: 'no-store',
-            signal: controller.signal 
-          });
-          clearTimeout(timeoutId);
-
-          if (res.ok) {
-            const data = await res.json();
-            activeApiBase = host;
-            foundOnline = true;
-            updateUIState(true, data.running, data.pid);
-            if (manual) {
-              appendTerminal(`Connected to bridge at ${host} (Status: ${data.running ? 'Running PID ' + data.pid : 'Idle'})`, 'success');
-            }
-            break;
-          }
-        } catch (e) {
-          // Continue probing next host
-        }
-      }
-
-      if (!foundOnline) {
-        updateUIState(false, false);
-        if (manual) {
-          appendTerminal(`Unable to reach bridge server on port 8000. Start with "uv run python app.py"`, 'warning');
-        }
-      }
-    }
-
-    // Periodic Log Fetching
-    async function fetchLogs() {
-      if (!isBridgeOnline) return;
+    window.setCameraLive = (on) => { cameraLive = on; renderStatus(); };
+    async function pingServer() {
       try {
-        const res = await fetch(`${activeApiBase}/api/logs`, { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = await res.json();
-        const logs = data.logs || [];
-
-        if (logs.length > lastLogIndex) {
-          const newEntries = logs.slice(lastLogIndex);
-          newEntries.forEach(entry => {
-            let type = 'info';
-            const msg = entry.message || '';
-            const lower = msg.toLowerCase();
-            if (lower.includes('error') || lower.includes('fail') || lower.includes('crash')) type = 'error';
-            else if (lower.includes('terminat') || lower.includes('stop') || lower.includes('clean')) type = 'warning';
-            else if (lower.includes('success') || lower.includes('initialized') || lower.includes('loaded')) type = 'success';
-            
-            appendTerminal(msg, type);
-          });
-          lastLogIndex = logs.length;
-        }
-      } catch (err) {
-        // Silent catch for network jitter
+        const r = await fetch(`${API_BASE}/api/health`, { cache: 'no-store' });
+        serverOnline = r.ok;
+      } catch (e) {
+        serverOnline = false;
       }
+      renderStatus();
+      return serverOnline;
     }
-
-    // Start Detection Click Handler
-    async function handleStartClick() {
-      if (!isBridgeOnline) {
-        openModal();
-        return;
-      }
-      await startDetection();
-    }
-
-    // Launch Detection
-    async function startDetection() {
-      const startBtn = document.getElementById('btn-start-detection');
-      startBtn.disabled = true;
-      startBtn.innerHTML = '<span>[ ⏳ ] INITIALIZING MODEL...</span>';
-      appendTerminal('Dispatching startup request to bridge...', 'info');
-
-      try {
-        const res = await fetch(`${activeApiBase}/api/start`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-
-        if (res.ok) {
-          appendTerminal(`Model process launched (PID: ${data.pid}). OpenCV window "Frame" is opening...`, 'success');
-          updateUIState(true, true, data.pid);
-        } else {
-          appendTerminal(`Launch failed: ${data.message || 'Unknown error'}`, 'error');
-          await discoverAndCheckStatus();
-        }
-      } catch (err) {
-        appendTerminal(`Network error while starting detection: ${err.message}`, 'error');
-        await discoverAndCheckStatus();
-      }
-    }
-
-    // Stop Detection
-    async function stopDetection() {
-      const stopBtn = document.getElementById('btn-stop-detection');
-      stopBtn.disabled = true;
-      appendTerminal('Sending termination signal (SIGINT) to detection process...', 'warning');
-
-      try {
-        const res = await fetch(`${activeApiBase}/api/stop`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        appendTerminal(data.message || 'Detection stopped.', 'info');
-        updateUIState(true, false);
-      } catch (err) {
-        appendTerminal(`Error terminating process: ${err.message}`, 'error');
-        await discoverAndCheckStatus();
-      }
-    }
-
-    // Check status wrapper
-    function checkStatus(manual = false) {
-      discoverAndCheckStatus(manual);
-    }
-
-    // Initialize Polling Loop
-    function startPollingLoop() {
-      discoverAndCheckStatus();
-      fetchLogs();
-
-      pollInterval = setInterval(async () => {
-        await discoverAndCheckStatus();
-        await fetchLogs();
-      }, 1500);
-    }
-
     window.addEventListener('DOMContentLoaded', () => {
-      startPollingLoop();
+      pingServer();
+      setInterval(pingServer, 5000);
     });
+  </script>
+  <script type="module">
+    import { initTextToSign } from './static/text2sign/app.js';
+    import { initSignToText } from './static/sign2text/app.js';
+    import { initSpeech } from './static/speech/app.js';
+    initSpeech();
+    window.initTextToSign = initTextToSign;
+    window.initSignToText = initSignToText;
+    const start = location.hash === '#sign-to-text' ? 'sign-to-text' : 'text-to-sign';
+    switchMode(start);
   </script>
 </body>
 </html>
