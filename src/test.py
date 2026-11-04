@@ -4,7 +4,8 @@ import torch
 from torch import load
 from torch.utils.data import DataLoader 
 from matplotlib import pyplot as plt 
-from utils.boxes import rescale_bboxes
+import os
+from utils.boxes import rescale_bboxes, stacker
 from utils.setup import get_classes
 from utils.logger import get_logger
 from utils.rich_handlers import TestHandler, DetectionHandler
@@ -19,10 +20,13 @@ logger.print_banner()
 CLASSES = get_classes()
 num_classes = len(CLASSES)
 test_dataset = DETRData('data/test', train=False) 
-test_dataloader = DataLoader(test_dataset, shuffle=True, batch_size=4, drop_last=True) 
+# stacker keeps per-image targets as a list: images can have one or two hands
+test_dataloader = DataLoader(test_dataset, shuffle=True, batch_size=4, drop_last=True, collate_fn=stacker)
 model = DETR(num_classes=num_classes)
 model.eval()
-model.load_pretrained('checkpoints/99_model.pt')
+# prefer the fine-tuned model exported by src/train.py
+weights = next(p for p in ('pretrained/ishaara_5class.pt', 'checkpoints/99_model.pt', 'pretrained/4426_model.pt') if os.path.exists(p))
+model.load_pretrained(weights)
 
 X, y = next(iter(test_dataloader))
 
